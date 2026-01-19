@@ -24,6 +24,18 @@ A precision temperature controller built on the M5Stack Dial, featuring TEC (Pel
 | TEC Module | Peltier thermoelectric cooler |
 | PC Fans (x2) | 4-pin PWM fans for heat dissipation |
 
+### EXTIO2 GPIO Firmware
+
+**Important**: The EXTIO2 unit ships with stock M5Stack firmware that does not support fan RPM counting. For fan control to work properly, you must update the EXTIO2 to custom firmware version 5.
+
+To update the GPIO firmware:
+1. Navigate to **Settings → Firmware** on the device
+2. Select **Update GPIO FW**
+3. Wait for the flashing process to complete (~5 seconds)
+4. Restart the device to enable fan control
+
+The firmware menu also shows the current EXTIO2 version and allows restoring the original M5Stack firmware if needed.
+
 ### Wiring
 
 See `docs/Stonecold_wiring.png` for the complete wiring diagram.
@@ -88,10 +100,10 @@ const char* WIFI_PASSWORD = "your-password";
 Navigate to configure:
 - Temperature unit (Celsius/Fahrenheit)
 - PID parameters (Kp, Ki, Kd)
-- Auto-tune PID
 - Fan settings (max speed, smart control)
 - Current draw monitoring
 - Power output display
+- Firmware (EXTIO2 GPIO firmware management)
 
 ### Smart Fan Control
 When enabled, fans automatically:

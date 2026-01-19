@@ -10,7 +10,7 @@ Stonecold is an M5Stack Dial-based temperature controller with a PT100 RTD senso
 - **Input**: Rotary encoder (4 pulses per detent) + center button
 - **Audio**: Built-in speaker for UI feedback
 - **Temperature Sensor**: MAX31865 RTD-to-Digital converter with PT100 (2-wire)
-- **I/O Expander**: PCA9554PW on I2C for software SPI and GPIO expansion
+- **I/O Expander**: EXTIO2 (STM32F030) on I2C for software SPI and GPIO expansion
 - **TEC Driver**: IBT-2 H-bridge for Peltier cooler control
 
 ### Pin Configuration
@@ -19,7 +19,7 @@ Stonecold is an M5Stack Dial-based temperature controller with a PT100 RTD senso
 | Port A SDA | GPIO13 | External I2C for PCA9554 |
 | Port A SCL | GPIO15 | External I2C for PCA9554 |
 | Port B (RPWM) | GPIO1 | PWM output for IBT-2 |
-| PCA9554 Address | 0x27 | I2C address |
+| EXTIO2 Address | 0x45 | I2C address (0x54 in bootloader mode) |
 | MAX31865 CLK | PCA9554 Pin 0 | Software SPI clock |
 | MAX31865 SDO (MISO) | PCA9554 Pin 1 | Data from MAX31865 |
 | MAX31865 SDI (MOSI) | PCA9554 Pin 2 | Data to MAX31865 |
@@ -115,10 +115,12 @@ main.cpp
 
 ## Class Details
 
-### PCA9554
+### PCA9554 (EXTIO2)
 **File**: `include/PCA9554.h`, `src/PCA9554.cpp`
 
-Shared I2C I/O expander for multiple peripherals. Manages output state to prevent conflicts.
+Shared I2C I/O expander (EXTIO2 unit with STM32F030) for multiple peripherals. Manages output state to prevent conflicts.
+
+**Important**: The EXTIO2 requires custom firmware (version 5) for fan RPM counting and PWM control. The stock M5Stack firmware does not support these modes. Update via Settings → Firmware → Update GPIO FW.
 
 ```cpp
 // Key methods
@@ -126,17 +128,35 @@ void begin();                              // Initialize (all pins as inputs)
 void setPinMode(uint8_t pin, bool output); // Configure pin direction
 void digitalWrite(uint8_t pin, bool level);// Set output pin
 bool digitalRead(uint8_t pin);             // Read input pin
+void setFanRPMPinMode(uint8_t pin);        // Custom firmware: FAN_RPM mode
+void setPWMPinMode(uint8_t pin);           // Custom firmware: PWM output mode
+void setPWMFrequency(uint8_t freqMode);    // Set PWM frequency (1=1kHz)
+void setPWMDutyCycle(uint8_t pin, uint8_t percent); // Set PWM duty cycle
+uint16_t readFanRPM(uint8_t pin);          // Read fan RPM from tach pin
 ```
 
 **Pin Allocation**:
-| Pin | Function | Direction |
-|-----|----------|-----------|
-| 0 | MAX31865 CLK | Output |
-| 1 | MAX31865 SDO (MISO) | Input |
-| 2 | MAX31865 SDI (MOSI) | Output |
-| 3 | MAX31865 CS | Output |
-| 4 | IBT-2 REN | Output |
-| 5-7 | Unused | - |
+| Pin | Function | Mode |
+|-----|----------|------|
+| 0 | MAX31865 CLK | Digital Output |
+| 1 | MAX31865 SDO (MISO) | Digital Input |
+| 2 | MAX31865 SDI (MOSI) | Digital Output |
+| 3 | MAX31865 CS | Digital Output |
+| 4 | IBT-2 REN | Digital Output |
+| 5 | Fan 1 Tach | FAN_RPM (custom firmware) |
+| 6 | Fan 2 Tach | FAN_RPM (custom firmware) |
+| 7 | Fan PWM | PWM Output (custom firmware) |
+
+**Custom Firmware Modes** (register 0x00-0x07):
+| Mode | Value | Description |
+|------|-------|-------------|
+| DIGITAL_INPUT | 0 | Standard digital input |
+| DIGITAL_OUTPUT | 1 | Standard digital output |
+| ADC_INPUT | 2 | Analog input (10-bit) |
+| SERVO_CTL | 3 | Servo PWM output |
+| RGB_LED | 4 | NeoPixel control |
+| PWM_OUTPUT | 5 | General PWM output |
+| FAN_RPM | 6 | Fan tachometer with hardware counting |
 
 ---
 
