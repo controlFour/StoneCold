@@ -38,7 +38,7 @@ The firmware menu also shows the current EXTIO2 version and allows restoring the
 
 ### Wiring
 
-See `docs/Stonecold_wiring.png` for the complete wiring diagram.
+See `docs/Stonecold_wiring.jpg` for the complete wiring diagram.
 
 ## Documentation
 
